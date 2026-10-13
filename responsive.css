@@ -1,0 +1,53 @@
+/* Preserve the desktop layout; stack controls and results on small screens. */
+.app-shell,main,.page,.panel,.work-layout>*,.reverse-panes>*{min-width:0}
+@media(max-width:600px){
+ .app-shell{padding:0 12px;padding-bottom:env(safe-area-inset-bottom)}
+ .topbar{gap:12px;padding:16px 0}
+ .topbar nav{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));width:100%;gap:4px}
+ .topbar nav button{padding:8px 2px;font-size:12px;min-height:44px;white-space:nowrap}
+ .tools button,footer button,.mode-tabs button,.target-tabs button,.data-tabs button{min-height:44px}
+ .page-heading{padding:20px 0 16px;gap:12px}
+ .page-heading h1,#trace .page-heading h1{font-size:21px;line-height:1.4}
+ .page-heading p{font-size:13px;line-height:1.7}
+ input[type=number],input[type=text],input[type=search],select,#scenario{font-size:16px!important;min-height:44px}
+ .field-pair{gap:12px}.field small{line-height:1.65}
+ #trace .sensitivity-specs,#trace .sensitivity-rows{padding:16px;border-radius:12px}
+ .sensitivity-spec-grid h2{line-height:1.5}.sensitivity-spec-grid p,.sensitivity-reference,.sensitivity-pricing{font-size:12px}
+ .sensitivity-control{grid-template-columns:minmax(0,1fr) auto;gap:12px}
+ #trace .sensitivity-number :is(input,select){width:110px;font-size:16px;min-height:44px}
+ .sensitivity-slider input[type=range]{height:44px;min-height:44px}
+ .sensitivity-result{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:14px 0 0}
+ .sensitivity-result>div{min-width:0}.sensitivity-result strong{font-size:22px;white-space:normal;overflow-wrap:anywhere}
+ .sensitivity-result small,.sensitivity-result em{font-size:12px}.sensitivity-result em{display:block;margin-top:3px}
+ .sensitivity-message{grid-column:1/-1}
+ .sensitivity-baseline{gap:8px 16px}.sensitivity-baseline>span{flex-basis:100%}
+ .sizing-table{display:block;width:100%;font-size:13px}.sizing-table thead{display:none}.sizing-table tbody{display:block}
+ .sizing-table tr{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 12px;padding:16px 0;border-bottom:1px solid var(--line)}
+ .sizing-table th,.sizing-table td{width:auto!important;padding:0!important;border:0;min-width:0;text-align:left}
+ .sizing-table th{grid-column:1/-1;font-size:14px}.sizing-table small{font-size:12px;line-height:1.7}
+ .sizing-table td:nth-child(2)::before{content:'设备';display:block;font-size:11px;color:var(--muted);margin-bottom:4px}
+ .sizing-table td:nth-child(3)::before{content:'采购费用';display:block;font-size:11px;color:var(--muted);margin-bottom:4px}
+ .sizing-table td:last-child{grid-column:1/-1}.sizing-table .process-link{min-height:44px;padding:8px 0;font-size:12px}
+ .sizing-table tr.final-sizing{padding:16px 12px;border-radius:8px}.sizing-table tr.final-sizing td strong{font-size:17px}
+ .selected-performance{display:grid;gap:8px;font-size:12px}.summary-note,.quote-note{line-height:1.75;overflow-wrap:anywhere}
+ .weight-line{line-height:1.75}.summary-heading h2{font-size:15px}.summary-heading .process-link{min-height:44px}
+ #calculation-section{padding:16px}.result-heading .actions{display:flex;flex-wrap:wrap;gap:6px}
+ #calculation-section .actions button{min-height:44px;font-size:12px}
+ .core-equation,.budget-equation,.formula{overflow-wrap:anywhere;min-width:0}
+ .budget-equation{grid-template-columns:minmax(0,1fr)}.budget-equation>span{grid-column:auto}
+ .budget-equation strong{font-size:13px}.reverse-known,.capacity-limits{gap:10px}
+ #catalog-table{min-width:0!important;width:100%;display:block}#catalog-table thead{display:none}#catalog-table tbody{display:block}
+ #catalog-table tr{display:block;padding:12px 0;border-bottom:1px solid var(--line)}
+ #catalog-table td{display:block;width:auto;padding:8px 0;font-size:12px;border:0;overflow-wrap:anywhere}
+ #catalog-table td::before{content:attr(data-label);display:block;margin-bottom:5px;font-size:11px;color:var(--muted)}
+ #catalog-table td>*{min-width:0}#catalog-table td small{font-size:11px;line-height:1.7}
+ .catalog-search{width:100%;max-width:100%;box-sizing:border-box}.data-tabs{display:flex;flex-wrap:wrap;gap:6px}
+ .chat-costs>div{gap:12px}.chat-message,.chat-message p{overflow-wrap:anywhere}
+ #scenario{font-size:16px!important}.chat-compose>button{min-height:44px}
+ footer{gap:12px;line-height:1.7}footer>div{display:flex;flex-wrap:wrap;gap:6px}
+}
+@media(max-width:360px){
+ .app-shell{padding-left:10px;padding-right:10px}.brand small{font-size:10px}.tools{gap:4px}.tools button{padding:6px;font-size:11px}
+ #trace .sensitivity-number :is(input,select){width:100px}.sensitivity-result strong{font-size:20px}
+ #catalog-table td{padding:8px 0}
+}

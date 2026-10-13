@@ -1,0 +1,14 @@
+[Unit]
+Description=Cost panel official catalog check
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/root/cost-panel
+ExecStart=/usr/bin/python3 /root/cost-panel/scripts/catalog_sync.py --if-due
+UMask=0077
+TimeoutStartSec=1200
+Nice=10
+NoNewPrivileges=yes
+PrivateTmp=yes

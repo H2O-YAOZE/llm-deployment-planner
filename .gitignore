@@ -1,0 +1,10 @@
+.env*
+!.env.example
+sync-state/
+backups/
+releases/
+__pycache__/
+*.pyc
+*.sync-new
+*.log
+.DS_Store

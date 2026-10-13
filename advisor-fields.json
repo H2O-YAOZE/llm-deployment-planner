@@ -1,0 +1,99 @@
+{
+  "version": "capacity-dialogue-3",
+  "validation": {
+    "numeric": {"concurrency":[1,100000],"inputK":[0.001,10000],"outputK":[0.001,10000],"ttft":[0.001,36000],"speed":[0.001,100000],"responseSlo":[0.001,360000],"budgetWan":[0.0001,100000000],"contextK":[0.001,10000],"throughput":[0,1000000000],"servers":[1,10000],"slots":[1,8],"usageHours":[0.001,24],"requestsPerDay":[0,1000000000]},
+    "integers": ["concurrency","servers","slots"],
+    "choices": {"contextMeaning":["capability","request","unknown"],"modality":["text","image","audio","video","unknown"],"mode":["forward","reverse"],"reverseTarget":["concurrency","throughput","speed","ttft","input","output"],"throughputMetric":["sustained-output","decode-output","requests"],"contextMode":["native","extended"],"topologyMode":["replicas","single"],"workloadMode":["closed-loop","requests"]},
+    "precisions": ["fp4","fp16","bf16","fp8","int8","int8ref","int4","mxfp4","nvfp4"]
+  },
+  "fields": [
+    {
+      "key": "model",
+      "label": "模型",
+      "question": "想部署哪个模型？也可以让我推荐。",
+      "suggestible": true,
+      "prompt": "模型：名称，或让我推荐"
+    },
+    {
+      "key": "card",
+      "label": "芯片与国产化",
+      "question": "必须用国产芯片吗，还是已经指定了芯片？",
+      "suggestible": true,
+      "prompt": "芯片：指定型号，或是否必须国产"
+    },
+    {
+      "key": "precision",
+      "label": "模型精度",
+      "question": "模型精度有要求吗？没有的话，我可以推荐芯片支持的精度。",
+      "suggestible": true,
+      "prompt": "精度：如 FP16、INT8，或让我推荐"
+    },
+    {
+      "key": "concurrency",
+      "label": "并发",
+      "question": "高峰时，最多有多少个人同时在生成回答？",
+      "suggestible": true,
+      "prompt": "并发：同时处理多少路请求"
+    },
+    {
+      "key": "speed",
+      "label": "单路生成速度",
+      "question": "每个人希望文字生成多快？可以说 Token/秒，也可以描述期望的体验。",
+      "suggestible": true,
+      "prompt": "单路速度：每人每秒多少 Token"
+    },
+    {
+      "key": "inputK",
+      "label": "输入长度",
+      "question": "每次实际需要读取多长的内容？可以说字数或 Token 数。",
+      "suggestible": true,
+      "prompt": "输入：每次多少 K Token"
+    },
+    {
+      "key": "outputK",
+      "label": "输出长度",
+      "question": "每次回答大约多长？可以说字数或 Token 数。",
+      "suggestible": true,
+      "prompt": "输出：每次多少 K Token"
+    },
+    {
+      "key": "ttft",
+      "label": "开始回答的等待时间",
+      "question": "提问后，最多能接受等几秒开始看到回答？",
+      "suggestible": true,
+      "prompt": "首 Token：最多等待多少秒"
+    },
+    {
+      "key": "servers",
+      "label": "已有设备数量",
+      "question": "已有几台设备？",
+      "suggestible": false,
+      "reverseOnly": true,
+      "prompt": "已有几台设备"
+    },
+    {
+      "key": "slots",
+      "label": "每台物理卡数",
+      "question": "每台设备有几张物理卡？",
+      "suggestible": false,
+      "reverseOnly": true,
+      "prompt": "每台有几张物理卡"
+    },
+    {
+      "key": "reverseTarget",
+      "label": "已有硬件的测算目标",
+      "question": "已有设备想优先算最大并发、生成速度，还是能处理多长的内容？",
+      "suggestible": false,
+      "reverseOnly": true,
+      "prompt": "已有设备要计算哪项最大能力"
+    },
+    {
+      "key": "responseSlo",
+      "label": "完整回答时间",
+      "question": "求最长输出时，整段回答最多允许多少秒完成？",
+      "suggestible": false,
+      "outputTargetOnly": true,
+      "prompt": "整段回答最多允许多少秒完成"
+    }
+  ]
+}

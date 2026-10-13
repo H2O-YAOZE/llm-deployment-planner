@@ -1,0 +1,11 @@
+[Unit]
+Description=Daily discovery and ten-day official catalog check
+
+[Timer]
+OnCalendar=*-*-* 02:10:00 UTC
+Persistent=true
+RandomizedDelaySec=15m
+Unit=cost-panel-catalog-sync.service
+
+[Install]
+WantedBy=timers.target

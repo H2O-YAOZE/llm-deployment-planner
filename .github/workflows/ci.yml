@@ -1,0 +1,29 @@
+name: Calculation and data checks
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Canonical catalog
+        run: python scripts/build-catalog.py --check
+      - name: Calculation and model integration
+        run: |
+          node tests/unverified-estimates.test.cjs
+          node tests/precision-capability.test.cjs
+          node tests/catalog-prices-20261002.test.cjs
+          node tests/catalog-integration.test.cjs
+      - name: Advisor and update services
+        run: |
+          python -m unittest test_advisor_flow test_advisor_short_replies test_advisor_service tests.test_unverified_estimates
+          python -m unittest discover -s tests -p 'test_catalog_*.py'

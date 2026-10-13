@@ -1,0 +1,43 @@
+/* Linked stages in normal flow; a single shared spine cannot cross a branch. */
+#trace .causal-controls form{display:flex;gap:12px;align-items:flex-end}
+#trace .causal-controls label{width:min(100%,380px)}
+#trace .causal-controls form button{min-height:44px;white-space:nowrap}
+#trace .causal-controls p{margin:0;font-size:12px;line-height:1.7;color:#496252}
+#trace .causal-panel{padding:28px;overflow:visible}
+.chain-view{position:relative;color:#264b36;min-width:0}
+.chain-spine{position:absolute;top:0;left:0;z-index:0;pointer-events:none;overflow:visible;max-width:100%}
+.chain-spine>path,.chain-spine g>path{fill:none;stroke:#a9c2b0;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+.chain-source-band{position:relative;z-index:1;display:flex;align-items:center;gap:32px;margin-bottom:40px}
+.chain-origin{border:1px solid #93b5a0;border-radius:12px;background:#eaf3ec;min-width:200px;max-width:360px;padding:16px 20px}
+.chain-origin>small{font-size:11px;color:#536e5c}.chain-origin h2{margin:6px 0 10px;font-size:18px;font-weight:600;line-height:1.5}
+.chain-origin .factor-label{display:none}.chain-origin .calc-number{font-size:17px;color:#226241}
+.chain-source-band>p{font-size:12px;color:#506b59;line-height:1.9;margin:0}
+.chain-branches{position:relative;z-index:1;padding-left:48px}
+.chain-lane{padding:0 0 28px;margin:0 0 24px;border-bottom:1px solid #e0e9df;min-width:0}
+.chain-lane:last-child{border:0;margin-bottom:0;padding-bottom:12px}
+.chain-lane>header{display:flex;gap:16px;align-items:center;flex-wrap:wrap;margin-bottom:12px;min-height:32px}
+.chain-lane h3{font-size:13px;font-weight:600;margin:0;color:#365d45}
+.chain-outcomes{display:flex;gap:6px;flex-wrap:wrap}.chain-outcomes button{font:inherit;font-size:11px;color:#4f6c59;background:transparent;border:1px solid transparent;border-radius:6px;padding:6px 10px;min-height:32px;cursor:pointer}
+.chain-outcomes button[aria-pressed=true]{background:#e7f0e8;border-color:#c4d8c8;color:#285f40}.chain-outcomes button:hover{background:#edf4ed}
+.chain-route[hidden],.chain-evidence[hidden]{display:none!important}
+.chain-track{display:flex;gap:0;align-items:stretch;overflow-x:auto;padding:4px 2px 10px;scrollbar-width:thin;scrollbar-color:#a5beae transparent}
+.chain-node{flex:1 0 126px;min-width:126px;max-width:230px;min-height:104px;padding:12px;border:1px solid #d4e1d4;border-radius:10px;background:#fbfdf9;color:#2d503a;text-align:left;font:inherit;cursor:pointer;display:flex;flex-direction:column;justify-content:space-between;gap:6px;box-sizing:border-box}
+.chain-node>small{font-size:10px;color:#6a8272;line-height:1.6}.chain-node>strong{font-size:12px;font-weight:500;line-height:1.6;overflow-wrap:anywhere}
+.chain-value{min-width:0}.chain-value .factor-label{display:none}.chain-value .calc-number{font-size:12px;color:#2e6443;line-height:1.6}.chain-stage-note{font-size:11px;line-height:1.6;color:#668070}
+.chain-result{border-color:#a2c2ad;background:#edf5ed}.chain-result>strong{font-weight:600}.chain-result .calc-number{font-size:14px;color:#23623e}.chain-stage{border-style:dashed}
+.chain-node:hover{border-color:#86aa92;background:#f0f7ef}.chain-node[aria-expanded=true]{border-color:#36734e;box-shadow:0 0 0 1px #36734e}
+.chain-node:focus-visible,.chain-outcomes button:focus-visible{outline:2px solid #397453;outline-offset:3px}
+.chain-arrow{display:flex;align-items:center;justify-content:center;flex:0 0 24px;color:#85a58f;font-size:20px;line-height:1;align-self:stretch}
+.chain-kind{font-size:10px;line-height:1.7;color:#678170;margin:0;padding-left:2px}
+.chain-evidence{border-top:1px solid #d8e5d8;margin-top:18px;padding-top:12px;font-size:12px;line-height:1.8;color:#3e5d48}
+.chain-evidence>summary{color:#397451;cursor:pointer;font-size:12px;min-height:32px}
+.chain-proof-columns{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:32px;padding-top:12px}
+.chain-proof-columns h3{font-size:13px;margin:0 0 12px}.chain-proof-columns h4{font-size:12px;margin:16px 0 6px;font-weight:500}
+.chain-formula{background:#f0f5ee;border-radius:8px;padding:12px 16px;overflow-wrap:anywhere;margin:0 0 18px}
+.chain-proof-columns .equation-values{margin-bottom:20px;gap:10px 6px}.chain-proof-columns ol{margin:0;padding-left:20px}.chain-proof-columns li{padding-bottom:6px;font-size:11px}.chain-proof-note{font-size:11px;color:#607d69;line-height:1.8;margin:12px 0 0}
+.chain-footnote{position:relative;z-index:1;font-size:11px;line-height:1.8;color:#5b7664;padding-top:16px;margin:12px 0 0;border-top:1px solid #d7e3d8;background:#fff}
+#trace-formulas .trace-formula{border-top:1px solid #d7e3d8;padding:18px 0}
+#trace-formulas .trace-formula h3{font-size:14px}#trace-formulas .trace-formula p{font-size:12px;line-height:1.8;overflow-wrap:anywhere}
+@media(max-width:750px){#trace .causal-panel{padding:20px 16px}.chain-source-band{gap:16px;align-items:flex-start;flex-direction:column;margin-bottom:28px}.chain-origin{min-width:180px}.chain-source-band>p{margin-left:36px}.chain-source-band>p br{display:none}.chain-branches{padding-left:36px}.chain-node{flex-basis:128px;min-width:128px}.chain-proof-columns{grid-template-columns:minmax(0,1fr);gap:24px}.chain-lane>header{gap:8px}.chain-outcomes{gap:3px}.chain-outcomes button{font-size:10px;padding:5px 7px}}
+@media(max-width:500px){#trace .causal-controls form{align-items:stretch;flex-direction:column}#trace .causal-controls label{width:100%}.chain-track{flex-direction:column;overflow:visible;padding:0 2px 8px}.chain-node{flex:auto;min-width:0;max-width:none;min-height:92px;width:100%;padding:12px 16px}.chain-arrow{flex:0 0 24px;transform:rotate(90deg);align-self:center}.chain-node>strong{font-size:13px}.chain-value .calc-number{font-size:13px}.chain-result .calc-number{font-size:15px}.chain-lane{margin-bottom:16px;padding-bottom:20px}.chain-lane>header{align-items:flex-start;flex-direction:column}.chain-outcomes button{min-height:36px}.chain-proof-columns .calc-number{font-size:12px}}
+@media(prefers-reduced-motion:reduce){.chain-view *{scroll-behavior:auto!important}}
