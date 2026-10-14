@@ -19,6 +19,7 @@ jobs:
         run: python scripts/build-catalog.py --check
       - name: Calculation and model integration
         run: |
+          node tests/failure-reasons.test.cjs
           node tests/unverified-estimates.test.cjs
           node tests/precision-capability.test.cjs
           node tests/catalog-prices-20261002.test.cjs

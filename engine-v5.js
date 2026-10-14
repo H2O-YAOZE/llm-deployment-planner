@@ -7,7 +7,7 @@
   const A=typeof module!=='undefined'&&module.exports?require('./compressed-attention.js'):root.CompressedAttention;
   const L=typeof module!=='undefined'&&module.exports?require('./parallel-layout.js'):root.ParallelLayout;
   const SP=typeof module!=='undefined'&&module.exports?require('./serving-planning.js'):root.ServingPlanning;
-  const VERSION='5.10.0',finite=n=>typeof n==='number'&&Number.isFinite(n);
+  const VERSION='5.10.1',finite=n=>typeof n==='number'&&Number.isFinite(n);
   const fmt=n=>finite(n)?new Intl.NumberFormat('zh-CN',{maximumFractionDigits:5}).format(n):'未知';
   const precision={
     fp4:{name:'FP4（格式待确认：MXFP4 / NVFP4）',bytes:null,compute:null},
@@ -343,6 +343,7 @@
     const baseResult={selection:{objective:s.mode==='forward'?'server-procurement':options.objective||'capacity',priced:procurement(q||{purchasedCards:0,servers:0},s)!==null,candidateCount:candidates.length,feasibleCount:valid.length,scope:'fixed-model-precision-chip-homogeneous-instances',networkIncluded:false,tieBreak:'fewer-servers-per-instance-then-fewer-instances'},ok:true,feasible:!!valid.length,errors,warnings,trace,inputs,candidates,I,O,S,weight,kvSessionBase:baseSession,kvSession:baseSession,
       cost:null,version:VERSION,diagnostics,performanceEvidence,deploymentEvidence,
       formulaContext:{parallel,compressed:compressed?Object.fromEntries(Object.entries(compressed).filter(([k,v])=>typeof v!=='function')):null,fullLayers:lf,slidingLayers:ls,linearLayers:ll,window:W,fullKV,slideKV,linearFixed,linearOps,quantB,nonquantBytes,activeBytes,metadataGB:precisionProfile?.fixedMetadataGB||0,weightBytes:p.bytes,precisionProfile:!!precisionProfile,denseMixed:!!precisionProfile?.dense}};
+    baseResult.failureReasons=failureReasons(baseResult,s);
     if(!q)return withFinancials(baseResult,s,data,options);
     const w=q.w;const kvSession=w.kvSession;
     const bind=['显存','首Token','末端Decode'][[q.kvCap,q.ttftCap,q.decodeCap].indexOf(q.bcap)];
@@ -473,6 +474,40 @@
       apiQuote,apiBudget,cost:{capex,power,energy,maintenance,depreciation,localMonthly,apiMonthly,payback,localTCO,apiTCO,comparable},
       warnings:[...warnings,...errors]};
   }
-  root.PlanningEngine={deploymentOrder,comparePlans,procurement,VERSION,precision,modelDefaults,defaults,canEstimate,estimation,supported,calculate,withFinancials,sumRoofline,windowPairs,fmt};
+  // Reasons describe searched candidates, never a measured hardware limit.
+  function failureReasons(r,s){
+    if(r.feasible)return [];
+    if(!r.ok)return r.errors||[];
+    const d=r.diagnostics,all=r.candidates||[],out=[];
+    if(!d)return ['计算未得到完整结果，请重新计算。'];
+    const n=v=>new Intl.NumberFormat('zh-CN',{maximumFractionDigits:2}).format(v);
+    const scope=`已检查的方案中，每个模型实例最多使用 ${n(d.maxTP)} 张卡${s.mode==='reverse'?`，已有 ${n(d.availableCards)} 张卡`:''}。这是公式估算及搜索范围内的结果，不是实机极限。`;
+    const runnable=all.filter(q=>q.single.fits);
+    if(!all.length)out.push('当前卡数与模型分组条件下，没有可检查的部署方案。');
+    else if(!d.weightFits)out.push(`显存装不下完整模型权重；仅按显存容量至少需要 ${n(d.minimumWeightCards)} 张卡，实际还需满足模型分组要求。`);
+    else if(!d.requestFits)out.push(`模型权重能装下，但输入 ${n(r.I)} Token、输出 ${n(r.O)} Token 所需的一路缓存放不下。`);
+    else{
+      if(runnable.every(q=>!q.single.ttftOK))out.push(`首 Token 时延未达标：输入 ${n(r.I)} Token 时，即使只处理一路请求，最快也估算需 ${n(d.fastestSingleTTFT)} 秒，高于要求的 ${n(s.ttft)} 秒。增加独立实例只能分担并发，不能把这一路输入拆开加速。`);
+      if(runnable.every(q=>!q.single.speedOK))out.push(`单路生成速度未达标：生成末尾最快估算为 ${n(d.fastestSingleSpeed)} Token/s，低于要求的 ${n(s.speed)} Token/s。`);
+      if(!out.length){
+        const capable=runnable.filter(q=>q.bcap>0&&q.groups>0);
+        if(!capable.length)out.push('显存、首 Token 和单路生成速度分别有可行方案，但没有同一个部署方案能同时满足这些条件。');
+        else{
+          const fits=capable.filter(q=>q.w.fits);
+          if(!fits.length)out.push(`单路请求能装下，但分配到实例的并发请求缓存超出显存；无法承接要求的 ${n(s.concurrency)} 路并发。`);
+          else{
+            const timed=fits.filter(q=>q.w.ttftOK),ready=timed.filter(q=>q.w.speedOK);
+            if(!timed.length)out.push(`单路请求可以满足，但整批 ${n(s.concurrency)} 路并发分配后，首 Token 时延超过 ${n(s.ttft)} 秒。`);
+            else if(!ready.length)out.push(`整批 ${n(s.concurrency)} 路并发分配后，单路生成速度无法同时达到 ${n(s.speed)} Token/s。`);
+            else if(ready.every(q=>!q.responseOK))out.push('完整输出所需时间超过指定的响应时间上限。');
+            else if(ready.filter(q=>q.responseOK).every(q=>!q.throughputOK))out.push('在满足显存、首 Token 和单路速度后，总吞吐仍未达到要求。');
+          }
+        }
+      }
+    }
+    if(!out.length)out.push('当前搜索范围内，没有同一个部署方案能同时满足全部条件。');
+    return [...out,scope];
+  }
+  root.PlanningEngine={deploymentOrder,comparePlans,procurement,VERSION,precision,modelDefaults,defaults,canEstimate,estimation,supported,calculate,withFinancials,failureReasons,sumRoofline,windowPairs,fmt};
   if(typeof module!=='undefined')module.exports=root.PlanningEngine;
 })(typeof window==='undefined'?globalThis:window);
