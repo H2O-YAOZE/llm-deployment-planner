@@ -7,7 +7,7 @@
   const A=typeof module!=='undefined'&&module.exports?require('./compressed-attention.js'):root.CompressedAttention;
   const L=typeof module!=='undefined'&&module.exports?require('./parallel-layout.js'):root.ParallelLayout;
   const SP=typeof module!=='undefined'&&module.exports?require('./serving-planning.js'):root.ServingPlanning;
-  const VERSION='5.10.1',finite=n=>typeof n==='number'&&Number.isFinite(n);
+  const VERSION='5.10.2',finite=n=>typeof n==='number'&&Number.isFinite(n);
   const fmt=n=>finite(n)?new Intl.NumberFormat('zh-CN',{maximumFractionDigits:5}).format(n):'未知';
   const precision={
     fp4:{name:'FP4（格式待确认：MXFP4 / NVFP4）',bytes:null,compute:null},
@@ -108,8 +108,8 @@
     const trace=[],errors=[],warnings=[],inputs=Object.keys(s),ignored=new Set(options.ignoreTargets||[]);
     const add=(id,title,deps,formula,value,unit='',note='')=>{trace.push({id,title,deps,formula,value,unit,note});return value;};
     const m=data.models[s.model],c=data.cards[s.card],p=precision[s.precision];
-    const fail=()=>({ok:false,feasible:false,errors,warnings,trace,inputs,candidates:[],version:VERSION,
-      apiBudget:options.performanceOnly||s.mode==='reverse'?null:P.budget(s,data,options.now??Date.now())});
+    const fail=()=>{const r={ok:false,feasible:false,errors,warnings,trace,inputs,candidates:[],version:VERSION,
+      apiBudget:options.performanceOnly||s.mode==='reverse'?null:P.budget(s,data,options.now??Date.now())};r.assessment=assessment(r,s);return r;};
     if(!m||!c||!p){errors.push('模型、芯片或精度ID无效');return fail();}
     if(!canEstimate(m)){errors.push('该模型缺少必要的公开权重或结构参数，不能凭空估算本地卡数。');return fail();}
     if(m.resourceEstimate)warnings.push(m.resourceEstimate.note);
@@ -124,7 +124,7 @@
     if(![1,2,4,8].includes(s.slots))errors.push('每台装卡数支持1/2/4/8');
     if(!['forward','reverse'].includes(s.mode))errors.push('测算方向无效');
     if(!supported(m,c).includes(s.precision))errors.push('没有此模型和芯片的可估算精度路径；原生格式不等于内核适配。');
-    if(s.activeB>s.totalB)errors.push('激活参数不能超过完整参数');
+    if(s.activeB>s.totalB)errors.push(`参数冲突：激活参数 ${s.activeB}B 大于模型总参数 ${s.totalB}B`);
     if(s.throughput!==undefined&&(!finite(s.throughput)||s.throughput<0))errors.push('总吞吐目标必须为非负数');
     if(s.throughputMetric&&!['sustained-output','decode-output','requests'].includes(s.throughputMetric))errors.push('吞吐单位/口径无效');
     if(!['single','replicas'].includes(s.topologyMode))errors.push('实例模式无效');
@@ -133,7 +133,7 @@
     const I=Math.round(s.inputK*1000),O=Math.round(s.outputK*1000),S=I+O;
     const contextLimit=s.contextMode==='extended'?m.extendedContextTokens:m.nativeContextTokens??m.contextTokens??m.contextK*1000;
     if(!finite(contextLimit))errors.push('所选原生/扩展上下文上限尚未核实');
-    else if(S>contextLimit)errors.push('输入+全部生成Token超过所选'+(s.contextMode==='extended'?'扩展':'原生')+'上下文上限 '+contextLimit);
+    else if(S>contextLimit)errors.push(`长度冲突：输入 ${I} + 输出 ${O} = ${S} Token，超过所选${s.contextMode==='extended'?'扩展':'原生'}上下文上限 ${contextLimit} Token`);
     if(m.localMaxOutputTokens&&O>m.localMaxOutputTokens)errors.push('超过已验证的本地运行时最大输出');
     if(errors.length)return fail();
     const singleInstance=options.singleInstance??(s.topologyMode==='single');
@@ -343,8 +343,20 @@
     const baseResult={selection:{objective:s.mode==='forward'?'server-procurement':options.objective||'capacity',priced:procurement(q||{purchasedCards:0,servers:0},s)!==null,candidateCount:candidates.length,feasibleCount:valid.length,scope:'fixed-model-precision-chip-homogeneous-instances',networkIncluded:false,tieBreak:'fewer-servers-per-instance-then-fewer-instances'},ok:true,feasible:!!valid.length,errors,warnings,trace,inputs,candidates,I,O,S,weight,kvSessionBase:baseSession,kvSession:baseSession,
       cost:null,version:VERSION,diagnostics,performanceEvidence,deploymentEvidence,
       formulaContext:{parallel,compressed:compressed?Object.fromEntries(Object.entries(compressed).filter(([k,v])=>typeof v!=='function')):null,fullLayers:lf,slidingLayers:ls,linearLayers:ll,window:W,fullKV,slideKV,linearFixed,linearOps,quantB,nonquantBytes,activeBytes,metadataGB:precisionProfile?.fixedMetadataGB||0,weightBytes:p.bytes,precisionProfile:!!precisionProfile,denseMixed:!!precisionProfile?.dense}};
+    baseResult.assessment=assessment(baseResult,s);
     baseResult.failureReasons=failureReasons(baseResult,s);
-    if(!q)return withFinancials(baseResult,s,data,options);
+    if(!q){
+      // Independent lower bounds are useful when no combined plan was found.
+      // Never turn a relaxed constraint into a purchasable complete solution.
+      if(s.mode==='forward'&&!options.performanceOnly){
+        baseResult.partialPlans=[['memory','仅检查显存',['ttft','speed','throughput']],['decode','显存 + 单路生成速度',['ttft','throughput']]].map(([id,label,ignoreTargets])=>{
+          const part=calculate(s,data,{...options,performanceOnly:true,ignoreTargets}),candidate=part.feasible?part.chosen:null;
+          return {id,label,feasible:!!candidate,cards:candidate?.purchasedCards??null,servers:candidate?.servers??null,
+            capex:candidate?procurement(candidate,s):null,relaxed:ignoreTargets,complete:false};
+        });
+      }
+      return withFinancials(baseResult,s,data,options);
+    }
     const w=q.w;const kvSession=w.kvSession;
     const bind=['显存','首Token','末端Decode'][[q.kvCap,q.ttftCap,q.decodeCap].indexOf(q.bcap)];
     add('chosenTP','选中每实例物理卡数',['topology','mode','topologyMode','concurrency','weight','activeWeight','context','model','kvWidth','kvBytes','kvReplication','kvTraffic','reserve','scratchGB','memoryGB','matrixTF','attentionTF','mfu','attentionMfu','bwEff','bandwidth','parallelLoss','prefillMatrix','prefillAttention','decodeMatrix','decodeAttention','unionGrowth','stepMs','transportMs',...['ttft','speed','throughput'].filter(k=>!ignored.has(k)&&k in s)],`在${candidates.length}个合法候选中选择`,q.tp,'张/实例');
@@ -399,7 +411,9 @@
     add('serverCount','采购/已有服务器',['chosenTP','groups','slots','mode','servers'],String(q.servers),q.servers,'台');
     add('purchasedCards','整机满配卡位',['serverCount','slots'],`${q.servers}×${s.slots}`,q.purchasedCards,'张');
     if(options.responseSlo!==undefined)add('responseCheck','完整响应限时',['response','responseSlo'],`${w.response}≤${options.responseSlo}`,q.responseOK?'满足':'不满足');
-    const result={...baseResult,feasible:q.valid,chosen:q,kvSession,bind};
+    // Internal probes still need a workpoint beyond the feasible boundary to
+    // explain it. Solver/UI exits must not present that probe as a solution.
+    const result={...baseResult,feasible:q.valid,chosen:q,...(!q.valid?{diagnosticCandidate:q}:{}),kvSession,bind};
     if(options.performanceOnly||s.mode==='reverse')return result;
     return financials(result,s,data,add,options);
   }
@@ -474,6 +488,13 @@
       apiQuote,apiBudget,cost:{capex,power,energy,maintenance,depreciation,localMonthly,apiMonthly,payback,localTCO,apiTCO,comparable},
       warnings:[...warnings,...errors]};
   }
+  function assessment(r,s){
+    const excluded=['长输入切分到更多设备协作处理（上下文并行）','读入与生成分别部署（Prefill / Decode 分离）'];
+    return {inputValid:!!r.ok,status:!r.ok?'invalid-or-missing-input':r.feasible?'estimated-feasible':'not-found-in-covered-plans',
+      physicalImpossibilityProven:false,globalOptimalityProven:false,
+      searched:{candidateCount:r.candidates?.length||0,maxCardsPerInstance:r.diagnostics?.maxTP??s.maxTP,
+        availableCards:s.mode==='reverse'?s.servers*s.slots:null,mode:s.topologyMode},excluded};
+  }
   // Reasons describe searched candidates, never a measured hardware limit.
   function failureReasons(r,s){
     if(r.feasible)return [];
@@ -481,13 +502,13 @@
     const d=r.diagnostics,all=r.candidates||[],out=[];
     if(!d)return ['计算未得到完整结果，请重新计算。'];
     const n=v=>new Intl.NumberFormat('zh-CN',{maximumFractionDigits:2}).format(v);
-    const scope=`已检查的方案中，每个模型实例最多使用 ${n(d.maxTP)} 张卡${s.mode==='reverse'?`，已有 ${n(d.availableCards)} 张卡`:''}。这是公式估算及搜索范围内的结果，不是实机极限。`;
+    const scope=`已检查 ${all.length} 个分组方案，每实例最多 ${n(d.maxTP)} 张卡${s.mode==='reverse'?`，已有 ${n(d.availableCards)} 张卡`:''}。这是当前搜索范围的估算，不是实机极限。`;
     const runnable=all.filter(q=>q.single.fits);
     if(!all.length)out.push('当前卡数与模型分组条件下，没有可检查的部署方案。');
     else if(!d.weightFits)out.push(`显存装不下完整模型权重；仅按显存容量至少需要 ${n(d.minimumWeightCards)} 张卡，实际还需满足模型分组要求。`);
     else if(!d.requestFits)out.push(`模型权重能装下，但输入 ${n(r.I)} Token、输出 ${n(r.O)} Token 所需的一路缓存放不下。`);
     else{
-      if(runnable.every(q=>!q.single.ttftOK))out.push(`首 Token 时延未达标：输入 ${n(r.I)} Token 时，即使只处理一路请求，最快也估算需 ${n(d.fastestSingleTTFT)} 秒，高于要求的 ${n(s.ttft)} 秒。增加独立实例只能分担并发，不能把这一路输入拆开加速。`);
+      if(runnable.every(q=>!q.single.ttftOK))out.push(`首 Token 时延未达标：在已计算的方案中，输入 ${n(r.I)} Token 时，单路最快估算 ${n(d.fastestSingleTTFT)} 秒，高于要求的 ${n(s.ttft)} 秒。`);
       if(runnable.every(q=>!q.single.speedOK))out.push(`单路生成速度未达标：生成末尾最快估算为 ${n(d.fastestSingleSpeed)} Token/s，低于要求的 ${n(s.speed)} Token/s。`);
       if(!out.length){
         const capable=runnable.filter(q=>q.bcap>0&&q.groups>0);
@@ -506,8 +527,9 @@
       }
     }
     if(!out.length)out.push('当前搜索范围内，没有同一个部署方案能同时满足全部条件。');
-    return [...out,scope];
+    return ['输入有效；当前已计算的方案未同时满足全部要求。',...out,
+      '尚未计算长输入跨设备切分、读入与生成分开部署的方案，不能据此判定硬件做不到。',scope];
   }
-  root.PlanningEngine={deploymentOrder,comparePlans,procurement,VERSION,precision,modelDefaults,defaults,canEstimate,estimation,supported,calculate,withFinancials,failureReasons,sumRoofline,windowPairs,fmt};
+  root.PlanningEngine={deploymentOrder,comparePlans,procurement,VERSION,precision,modelDefaults,defaults,canEstimate,estimation,supported,calculate,withFinancials,assessment,failureReasons,sumRoofline,windowPairs,fmt};
   if(typeof module!=='undefined')module.exports=root.PlanningEngine;
 })(typeof window==='undefined'?globalThis:window);

@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src data: blob:">
+  <title>部署推演：计算链路与覆盖范围</title>
+  <style>
+    :root { color-scheme: dark; --page:#0f0f1a; --panel:#0f172a; --border:#334155; --text:#e2e8f0; --muted:#94a3b8; --accent:#a855f7; }
+    html[data-theme="light"] { color-scheme:light; --page:#f8fafc; --panel:#fff; --border:#cbd5e1; --text:#0f172a; --muted:#475569; --accent:#7c3aed; }
+    * { box-sizing:border-box; }
+    html,body { width:100%; height:100%; margin:0; overflow:hidden; background:linear-gradient(135deg,var(--page),#1a1a2e); color:var(--text); font-family:'SF Mono','Fira Code',ui-monospace,monospace; }
+    body { display:grid; grid-template-rows:auto 1fr; }
+    .toolbar { display:flex; flex-wrap:wrap; align-items:center; gap:8px; padding:10px 14px; background:color-mix(in srgb,var(--panel) 92%,transparent); border-bottom:1px solid var(--border); z-index:2; }
+    .title { margin-right:auto; font-size:13px; font-weight:700; }
+    button,select { min-height:34px; padding:6px 10px; color:var(--text); background:var(--panel); border:1px solid var(--border); border-radius:8px; font:inherit; cursor:pointer; }
+    button:hover,button:focus-visible,select:focus-visible { border-color:var(--accent); outline:2px solid color-mix(in srgb,var(--accent) 35%,transparent); outline-offset:1px; }
+    #stage { position:relative; overflow:hidden; touch-action:none; cursor:grab; }
+    #stage.dragging { cursor:grabbing; }
+    #canvas { width:100%; height:100%; display:grid; place-items:center; transform-origin:0 0; will-change:transform; }
+    #canvas svg { max-width:calc(100vw - 40px); max-height:calc(100vh - 92px); width:auto; height:auto; filter:drop-shadow(0 22px 60px rgba(0,0,0,.28)); user-select:none; }
+    #status { min-width:76px; color:var(--muted); font-size:12px; text-align:center; }
+    .sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
+    @media (prefers-reduced-motion:reduce) { * { scroll-behavior:auto!important; transition:none!important; } }
+  </style>
+</head>
+<body>
+  <header class="toolbar" aria-label="Diagram controls">
+    <span class="title">部署推演：计算链路与覆盖范围</span>
+    <button type="button" data-action="zoom-out" aria-label="Zoom out">−</button>
+    <button type="button" data-action="reset" aria-label="Reset view">Reset</button>
+    <button type="button" data-action="zoom-in" aria-label="Zoom in">+</button>
+    <span id="status" aria-live="polite">100%</span>
+    <button type="button" data-action="theme" aria-label="Toggle theme">Theme</button>
+    <button type="button" data-action="copy" aria-label="Copy SVG source">Copy SVG</button>
+    <select id="scale" aria-label="Raster export scale"><option value="1">1×</option><option value="2" selected>2×</option><option value="3">3×</option><option value="4">4×</option></select>
+    <select id="format" aria-label="Export format"><option>SVG</option><option>PNG</option><option>JPEG</option><option>WebP</option></select>
+    <button type="button" data-action="download">Export</button>
+  </header>
+  <main id="stage" tabindex="0" aria-label="Interactive diagram. Drag to pan; use plus and minus to zoom.">
+    <div id="canvas"><svg xmlns="http://www.w3.org/2000/svg" width="1200" height="960" viewBox="0 0 1200 960" role="img" aria-labelledby="title desc" focusable="false">
+<title id="title">从需求到设备与费用，计算到底经过哪些环节</title>
+<desc id="desc">先核对输入和上下文，再枚举实例分组。同一方案分别检查显存、读入延迟和生成速度，全部通过才计算完整采购费用。上下文并行和读入生成分离尚未纳入搜索。</desc>
+<defs><marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8Z" fill="#2563eb" /></marker></defs>
+<rect width="1200" height="960" fill="#ffffff" />
+<g>
+<text font-family="Microsoft YaHei, PingFang SC, Arial, sans-serif" x="60" y="55" font-size="30" font-weight="600">从需求到设备与费用</text>
+<text font-family="Microsoft YaHei, PingFang SC, Arial, sans-serif" x="60" y="87" font-size="17" fill="#6b7280">同一套计算服务于：按需求选硬件 · 用已有硬件求能力 · 场景问答</text>
+<rect id="inputs" x="60" y="120" width="1080" height="100" rx="8" fill="#eff6ff" stroke="#bfdbfe" />
+<text font-family="Microsoft YaHei, PingFang SC, Arial, sans-serif" x="85" y="151" font-size="22" font-weight="600">01 先确认条件有效</text>
+<text font-family="Microsoft YaHei, PingFang SC, Arial, sans-serif" x="85" y="181" font-size="18">模型、精度、芯片；并发、输入、输出、单路速度、首 Token 等待时间</text>
+<text font-family="Microsoft YaHei, PingFang SC, Arial, sans-serif" x="85" y="207" font-size="16" fill="#6b7280">检查输入 + 输出是否超过模型上下文；缺参数或有冲突，就展示具体字段、数值和限制。</text>
+<path d="M600 220 V270" stroke="#2563eb" stroke-width="2" marker-end="url(#arrow)" />
+<rect id="layouts" x="60" y="280" width="1080" height="100" rx="8" fill="#fff" stroke="#d1d5db" />
+<text font-family="Microsoft YaHei, PingFang SC, Arial, sans-serif" x="85" y="312" font-size="22" font-weight="600">02 枚举部署方案</text>
+<text font-family="Microsoft YaHei, PingFang SC, Arial, sans-serif" x="85" y="343" font-size="18">每个实例用几张卡？能放几个实例？每个实例分担多少请求？</text>
+<text font-family="Microsoft YaHei, PingFang SC, Arial, sans-serif" x="85" y="369" font-size="16" fill="#6b7280">正向：寻找满足需求的低采购费用方案。反向：固定设备，只求你选择的那个指标。</text>
+<path d="M230 380 V440" stroke="#2563eb" stroke-width="2" fill="none" marker-end="url(#arrow)" />
+<path d="M600 380 V440" stroke="#2563eb" stroke-width="2" fill="none" marker-end="url(#arrow)" />
+<path d="M970 380 V440" stroke="#2563eb" stroke-width="2" fill="none" marker-end="url(#arrow)" />
+<rect id="memory" x="60" y="450" width="340" height="150" rx="8" fill="#f0fdf4" stroke="#bbf7d0" />
+<text font-family="Microsoft YaHei, PingFang SC, Arial, sans-serif" x="82" y="484" font-size="22" font-weight="600">03A 显存能否装下</text>
+<text font-family="Microsoft YaHei, PingFang SC, Arial, sans-serif" x="82" y="518" font-size="18">模型权重 + 每路缓存 × 并发</text>
+<text font-family="Microsoft YaHei, PingFang SC, Arial, sans-serif" x="82" y="549" font-size="17">再计入分组复制与预留空间</text>
+<text font-family="Microsoft YaHei, PingFang SC, Arial, sans-serif" x="82" y="580" font-size="16" fill="#6b7280">每张卡都要装得下，不能只加总。</text>
+<rect id="prefill" x="430" y="450" width="340" height="150" rx="8" fill="#f0fdf4" stroke="#bbf7d0" />
+<text font-family="Microsoft YaHei, PingFang SC, Arial, sans-serif" x="452" y="484" font-size="22" font-weight="600">03B 能否及时开始回答</text>
+<text font-family="Microsoft YaHei, PingFang SC, Arial, sans-serif" x="452" y="518" font-size="18">读入计算量 ÷ 有效算力</text>
+<text font-family="Microsoft YaHei, PingFang SC, Arial, sans-serif" x="452" y="549" font-size="17">与访存耗时比较，再加阶段开销</text>
+<text font-family="Microsoft YaHei, PingFang SC, Arial, sans-serif" x="452" y="580" font-size="16" fill="#6b7280">结果必须小于要求的首 Token 时延。</text>
+<rect id="decode" x="800" y="450" width="340" height="150" rx="8" fill="#f0fdf4" stroke="#bbf7d0" />
+<text font-family="Microsoft YaHei, PingFang SC, Arial, sans-serif" x="822" y="484" font-size="22" font-weight="600">03C 生成能否跟得上</text>
+<text font-family="Microsoft YaHei, PingFang SC, Arial, sans-serif" x="822" y="518" font-size="18">逐步计算 + 读取权重与缓存</text>
+<text font-family="Microsoft YaHei, PingFang SC, Arial, sans-serif" x="822" y="549" font-size="17">上下文越长，末尾每步也要检查</text>
+<text font-family="Microsoft YaHei, PingFang SC, Arial, sans-serif" x="822" y="580" font-size="16" fill="#6b7280">单路速度 = 1 ÷ 每步耗时。</text>
+<path d="M230 600 V660" stroke="#2563eb" stroke-width="2" fill="none" marker-end="url(#arrow)" />
+<path d="M600 600 V660" stroke="#2563eb" stroke-width="2" fill="none" marker-end="url(#arrow)" />
+<path d="M970 600 V660" stroke="#2563eb" stroke-width="2" fill="none" marker-end="url(#arrow)" />
+<rect id="selection" x="60" y="670" width="1080" height="120" rx="8" fill="#eff6ff" stroke="#bfdbfe" />
+<text font-family="Microsoft YaHei, PingFang SC, Arial, sans-serif" x="85" y="703" font-size="22" font-weight="600">04 同一个方案全部通过，才能给出完整设备配置</text>
+<text font-family="Microsoft YaHei, PingFang SC, Arial, sans-serif" x="85" y="737" font-size="18">按实例占卡与每台卡位装箱，算出台数；采购费用 = 卡数 × 卡价 + 台数 × 平台价。</text>
+<text font-family="Microsoft YaHei, PingFang SC, Arial, sans-serif" x="85" y="770" font-size="17" fill="#6b7280">三项卡数不能相加。只满足显存的配置不是完整推荐。API 费用独立计算，不参与反向硬件求解。</text>
+<rect id="coverage" x="60" y="840" width="1080" height="80" rx="8" fill="#fff7ed" stroke="#fed7aa" />
+<text font-family="Microsoft YaHei, PingFang SC, Arial, sans-serif" x="85" y="870" font-size="20" font-weight="600">当前未覆盖：长输入跨设备切分、读入与生成分开部署的完整估算</text>
+<text font-family="Microsoft YaHei, PingFang SC, Arial, sans-serif" x="85" y="901" font-size="17" fill="#6b7280">搜索无结果 ≠ 输入矛盾，也不证明硬件做不到。费用及性能均为规划估算，非实机保证。</text>
+</g></svg></div>
+    <p class="sr-only">Keyboard shortcuts: plus and minus zoom, zero resets, T toggles theme, S exports.</p>
+  </main>
+  <script>
+  (() => {
+    'use strict';
+    const metadata = {"slug": "calculation-audit"};
+    const stage = document.getElementById('stage');
+    const canvas = document.getElementById('canvas');
+    const svg = canvas.querySelector('svg');
+    const status = document.getElementById('status');
+    const scaleSelect = document.getElementById('scale');
+    const formatSelect = document.getElementById('format');
+    let view = { x:0, y:0, scale:1 };
+    let drag = null;
+    const clamp = value => Math.max(.2, Math.min(8, value));
+    const render = () => {
+      canvas.style.transform = `translate(${view.x}px,${view.y}px) scale(${view.scale})`;
+      status.textContent = `${Math.round(view.scale * 100)}%`;
+    };
+    const zoom = (factor, originX=stage.clientWidth/2, originY=stage.clientHeight/2) => {
+      const next = clamp(view.scale * factor);
+      const ratio = next / view.scale;
+      view.x = originX - (originX - view.x) * ratio;
+      view.y = originY - (originY - view.y) * ratio;
+      view.scale = next; render();
+    };
+    const reset = () => { view = {x:0,y:0,scale:1}; render(); };
+    stage.addEventListener('wheel', event => { event.preventDefault(); const rect=stage.getBoundingClientRect(); zoom(event.deltaY < 0 ? 1.12 : .89, event.clientX-rect.left, event.clientY-rect.top); }, {passive:false});
+    stage.addEventListener('pointerdown', event => { drag={id:event.pointerId,x:event.clientX,y:event.clientY,vx:view.x,vy:view.y}; stage.setPointerCapture(event.pointerId); stage.classList.add('dragging'); });
+    stage.addEventListener('pointermove', event => { if(!drag||drag.id!==event.pointerId)return; view.x=drag.vx+event.clientX-drag.x; view.y=drag.vy+event.clientY-drag.y; render(); });
+    const endDrag = () => { drag=null; stage.classList.remove('dragging'); };
+    stage.addEventListener('pointerup', endDrag); stage.addEventListener('pointercancel', endDrag);
+    const source = () => new XMLSerializer().serializeToString(svg);
+    const saveBlob = (blob, extension) => { const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=`${(metadata.slug||'fireworks-tech-graph')}.${extension}`; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),1000); };
+    const copySource = async () => {
+      const value=source();
+      try { await navigator.clipboard.writeText(value); status.textContent='Copied'; return; } catch {}
+      const area=document.createElement('textarea'); area.value=value; area.setAttribute('readonly',''); area.style.position='fixed'; area.style.opacity='0'; document.body.appendChild(area); area.select();
+      status.textContent=document.execCommand('copy')?'Copied':'Copy failed'; area.remove();
+    };
+    const exportDiagram = async () => {
+      const format = formatSelect.value.toLowerCase();
+      if(format==='svg') { saveBlob(new Blob([source()],{type:'image/svg+xml;charset=utf-8'}),'svg'); return; }
+      const scale = Math.max(1,Math.min(4,Number(scaleSelect.value)||2));
+      const box = svg.viewBox.baseVal; const width=box.width||svg.clientWidth; const height=box.height||svg.clientHeight;
+      const image = new Image(); const url=URL.createObjectURL(new Blob([source()],{type:'image/svg+xml'}));
+      await new Promise((resolve,reject)=>{ image.onload=resolve; image.onerror=reject; image.src=url; });
+      const raster=document.createElement('canvas'); raster.width=Math.round(width*scale); raster.height=Math.round(height*scale);
+      const ctx=raster.getContext('2d'); if(format==='jpeg'){ctx.fillStyle='#ffffff';ctx.fillRect(0,0,raster.width,raster.height);} ctx.drawImage(image,0,0,raster.width,raster.height); URL.revokeObjectURL(url);
+      const mime=format==='jpeg'?'image/jpeg':format==='webp'?'image/webp':'image/png';
+      const blob=await new Promise(resolve=>raster.toBlob(resolve,mime,.94)); if(blob) saveBlob(blob,format==='jpeg'?'jpg':format);
+    };
+    document.querySelector('.toolbar').addEventListener('click', async event => {
+      const action=event.target.closest('[data-action]')?.dataset.action; if(!action)return;
+      if(action==='zoom-in')zoom(1.2); else if(action==='zoom-out')zoom(.83); else if(action==='reset')reset();
+      else if(action==='theme')document.documentElement.dataset.theme=document.documentElement.dataset.theme==='dark'?'light':'dark';
+      else if(action==='download')await exportDiagram();
+      else if(action==='copy') await copySource();
+    });
+    document.addEventListener('keydown', event => {
+      if(event.target.matches('select'))return;
+      if(event.key==='+'||event.key==='=')zoom(1.2); else if(event.key==='-')zoom(.83); else if(event.key==='0'||event.key.toLowerCase()==='r')reset();
+      else if(event.key.toLowerCase()==='t')document.querySelector('[data-action=theme]').click(); else if(event.key.toLowerCase()==='s'){event.preventDefault();exportDiagram();}
+    });
+    render();
+  })();
+  </script>
+</body>
+</html>

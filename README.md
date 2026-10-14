@@ -118,3 +118,9 @@ python -m unittest discover -s tests -p "test_catalog_*.py"
 欢迎贡献带来源的模型或硬件资料、完整条件下的压测、报价说明，以及计算和界面改进。修改基础数据时请同步核对计算适配，并运行 `python scripts/build-catalog.py`，保持目录与浏览器数据一致。
 
 本项目代码采用 MIT 许可证。第三方组件、模型、数据来源及其使用受各自许可和条款约束；模型目录不包含模型权重。ECharts许可证保留在 `vendor/echarts-6.1.0/`。
+
+## 计算范围与审查
+
+[计算链路图](calculation-audit.html) · [2026-10-15 审查记录](docs/CALCULATION-AUDIT-20261015.md)
+
+输入有效但搜索无结果，不等于硬件做不到。当前尚未纳入上下文并行和 Prefill/Decode 分离的完整容量与定价模型；部分条件的卡数和费用仅用于解释，不能当作完整采购方案。

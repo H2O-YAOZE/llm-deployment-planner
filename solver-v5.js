@@ -65,7 +65,7 @@
    if(target==='output')options.responseSlo=source.responseSlo;
    const first=E.calculate(state,data,{...options,ignoreTargets:['throughput']});
    if(!first.ok)return {...first,solve:{target,meta,answer:null},effectiveState:state,options};
-   const m=data.models[state.model],context=state.contextMode==='extended'?m.extendedContextTokens:m.nativeContextTokens;
+   const m=data.models[state.model],context=state.contextMode==='extended'?m.extendedContextTokens:m.nativeContextTokens??m.contextTokens??m.contextK*1000;
    const upper=Math.min(10000000,Math.floor(context)-Math.round(state[other]*1000));let best=null,evaluations=0;
    for(const q of first.candidates){
     const read=(n,ignore=true)=>{evaluations++;return E.calculate({...state,[key]:n/1000},data,{...options,forceTP:q.tp,forceAttentionTP:q.attentionTP,ignoreTargets:ignore?['throughput']:[]});};
@@ -91,7 +91,11 @@
    answer=best?.answer??null;state[key]=(answer??1)/1000;result=best?.r||{...first,feasible:false};
    search={upper,limitHit:answer===upper,evaluations,method:'逐TP整数边界搜索；总输出吞吐先求单峰区间再检查右边界'};
   }
-  if(!result.ok||!result.feasible||answer===null)return {...result,solve:{target,meta,answer:null,search},effectiveState:state,options};
+  if(!result.ok||!result.feasible||answer===null){
+   const failed={...result,feasible:false,cost:null};delete failed.chosen;
+   failed.assessment=E.assessment(failed,state);failed.failureReasons=E.failureReasons(failed,state);
+   return {...failed,solve:{target,meta,answer:null,search},effectiveState:state,options};
+  }
   const q=result.chosen,bounds={kv:Math.min(MAX_CONCURRENCY,q.kvCap*q.groups),decode:Math.min(MAX_CONCURRENCY,q.decodeCap*q.groups),prefill:Math.min(MAX_CONCURRENCY,q.ttftCap*q.groups)};
   const deps=target==='concurrency'?['caps','groups']:target==='speed'?['decodeSpeed']:target==='ttft'?['ttftResult']:target==='throughput'?['totalOutputThroughput','totalDecodeThroughput','completedRequests']:['context','used','ttftResult','decodeSpeed',...(target==='output'?['responseCheck']:[])];
   // Nested context searches already have an answer node; keep one final answer

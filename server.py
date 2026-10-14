@@ -27,6 +27,7 @@ PUBLIC = {'responsive.css','calculation-numbers.js','reverse-calculation.js','ca
 
 
 PUBLIC.add('catalog-sync-ui.js')
+PUBLIC.update({'calculation-audit.html','calculation-audit.svg'})
 
 def check_auth(header, settings=None):
     settings = configuration() if settings is None else settings
